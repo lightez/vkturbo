@@ -2,9 +2,97 @@ import aiohttp
 import asyncio
 
 
+class EventType:
+	#: Замена флагов сообщения (FLAGS:=$flags)
+	MESSAGE_FLAGS_REPLACE = 1
+
+	#: Установка флагов сообщения (FLAGS|=$mask)
+	MESSAGE_FLAGS_SET = 2
+
+	#: Сброс флагов сообщения (FLAGS&=~$mask)
+	MESSAGE_FLAGS_RESET = 3
+
+	#: Добавление нового сообщения.
+	MESSAGE_NEW = 4
+
+	#: Редактирование сообщения.
+	MESSAGE_EDIT = 5
+
+	#: Прочтение всех входящих сообщений в $peer_id,
+	#: пришедших до сообщения с $local_id.
+	READ_ALL_INCOMING_MESSAGES = 6
+
+	#: Прочтение всех исходящих сообщений в $peer_id,
+	#: пришедших до сообщения с $local_id.
+	READ_ALL_OUTGOING_MESSAGES = 7
+
+	#: Друг $user_id стал онлайн. $extra не равен 0, если в mode был передан флаг 64.
+	#: В младшем байте числа extra лежит идентификатор платформы
+	#: (см. :class:`VkPlatform`).
+	#: $timestamp — время последнего действия пользователя $user_id на сайте.
+	USER_ONLINE = 8
+
+	#: Друг $user_id стал оффлайн ($flags равен 0, если пользователь покинул сайт и 1,
+	#: если оффлайн по таймауту). $timestamp — время последнего действия пользователя
+	#: $user_id на сайте.
+	USER_OFFLINE = 9
+
+	#: Сброс флагов диалога $peer_id.
+	#: Соответствует операции (PEER_FLAGS &= ~$flags).
+	#: Только для диалогов сообществ.
+	PEER_FLAGS_RESET = 10
+
+	#: Замена флагов диалога $peer_id.
+	#: Соответствует операции (PEER_FLAGS:= $flags).
+	#: Только для диалогов сообществ.
+	PEER_FLAGS_REPLACE = 11
+
+	#: Установка флагов диалога $peer_id.
+	#: Соответствует операции (PEER_FLAGS|= $flags).
+	#: Только для диалогов сообществ.
+	PEER_FLAGS_SET = 12
+
+	#: Удаление всех сообщений в диалоге $peer_id с идентификаторами вплоть до $local_id.
+	PEER_DELETE_ALL = 13
+
+	#: Восстановление недавно удаленных сообщений в диалоге $peer_id с
+	#: идентификаторами вплоть до $local_id.
+	PEER_RESTORE_ALL = 14
+
+	#: Один из параметров (состав, тема) беседы $chat_id были изменены.
+	#: $self — 1 или 0 (вызваны ли изменения самим пользователем).
+	CHAT_EDIT = 51
+
+	#: Изменение информации чата $peer_id с типом $type_id
+	#: $info — дополнительная информация об изменениях
+	CHAT_UPDATE = 52
+
+	#: Пользователь $user_id набирает текст в диалоге.
+	#: Событие приходит раз в ~5 секунд при наборе текста. $flags = 1.
+	USER_TYPING = 61
+
+	#: Пользователь $user_id набирает текст в беседе $chat_id.
+	USER_TYPING_IN_CHAT = 62
+
+	#: Пользователь $user_id записывает голосовое сообщение в диалоге/беседе $peer_id
+	USER_RECORDING_VOICE = 64
+
+	#: Пользователь $user_id совершил звонок с идентификатором $call_id.
+	USER_CALL = 70
+
+	#: Счетчик в левом меню стал равен $count.
+	MESSAGES_COUNTER_UPDATE = 80
+
+	#: Изменились настройки оповещений.
+	#: $peer_id — идентификатор чата/собеседника,
+	#: $sound — 1/0, включены/выключены звуковые оповещения,
+	#: $disabled_until — выключение оповещений на необходимый срок.
+	NOTIFICATION_SETTINGS_UPDATE = 114
+
+
 class LongPoll(object):
 
-	def __init__(self, vk, mode=2, wait=25, group_id=None):
+	def __init__(self, vk, mode=4, wait=25, group_id=None):
 		self.vk = vk
 		self.mode = mode
 		self.wait = wait
@@ -49,13 +137,16 @@ class LongPoll(object):
 		}
 
 		async with aiohttp.ClientSession() as session:
-			response = await session.get(self.url, params=values, timeout=self.wait + 10)
+			response = await session.get(self.url, params=values, timeout=self.wait)
+			response = await response.json()
+		
+		events = [raw_event for raw_event in response["updates"]]
 
-		if "failed" not in response:
-			self.ts = response["ts"]
-			if self.pts:
-				self.pts = response["pts"]
+		return events
 
-			#events = [for raw_event in response["updates"]]
 
-			# Need dorabotka blyat...
+	@asyncio.coroutine
+	async def listen(self):
+		while True:
+			for event in await self.get_event_server():
+				yield event
