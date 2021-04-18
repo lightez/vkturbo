@@ -1,7 +1,7 @@
 # vkturbo
 Asynchronous module of vk_api
 
-[PyPi VkTrubo](https://pypi.org/project/vkturbo/)
+[PyPi VkTurbo](https://pypi.org/project/vkturbo/)
 
 [Official documentation of Vk API](https://vk.com/dev/manuals)
 
