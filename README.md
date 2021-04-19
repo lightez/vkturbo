@@ -102,4 +102,4 @@ async def test_keyboard():
 				)
 ```
 
-[visual](https://github.com/Fsoky/vkturbo/tree/main/images/keyboard.png)
+![visual](https://github.com/Fsoky/vkturbo/tree/main/images/keyboard.png)
