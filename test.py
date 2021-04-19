@@ -1,27 +1,50 @@
-from vkturbo.vkturbo import VkApi
+from vkturbo.vkturbo import VkTurbo
 from vkturbo.handler import EventHandler
 from vkturbo.longpoll import LongPoll, EventType
+from vkturbo.keyboard import Keyboard, KeyboardButton
 
-vk = VkApi("TOKEN")
+vk = VkTurbo("TOKEN")
 longpoll = LongPoll(vk)
-handler = EventHandler(vk, longpoll)
+handler = EventHandler()
 
 
-# Simple function for sending a messages
-async def send_message(user_id, message):
-	await vk.method("messages.send", {
-		"user_id": user_id,
-		"message": message,
-		"random_id": 0
-	})
+"""
+@handler.handler
+async def simple_using_method():
+	await vk.method("status.get", {"user_id": vk.user_id("ansqqq")})
+"""
 
-
+# LongPoll...
 @handler.event()
-async def new_lonpoll_version_vkturbo():
+async def test_keyboard():
 	async for event in await longpoll.listen():
-		if event[0] == EventType.MESSAGE_NEW: # or 4
-			text = event[5].lower()
+		if event[0] == 4:
 			user_id = event[3]
+			text = event[5].lower()
 
 			if text == "test":
-				await send_message(user_id, "Test message...")
+				keyboard = Keyboard(
+					[
+						[
+							KeyboardButton().text("Primary", "primary"),
+							KeyboardButton().text("Secondary", "secondary"),
+							KeyboardButton().text("Positive", "positive")
+						],
+						[
+							KeyboardButton().text("Negative", "negative"),
+							KeyboardButton().openlink("YouTube", "https://youtube.com/c/Фсоки")
+						],
+						[
+							KeyboardButton().location()
+						]
+					]
+				)
+
+				await vk.method("messages.send",
+					{
+						"user_id": user_id,
+						"message": "something text...",
+						"keyboard": keyboard.add_keyboard(),
+						"random_id": 0
+					}
+				)
