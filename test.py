@@ -2,7 +2,7 @@ from vkturbo.vkturbo import VkApi
 from vkturbo.handler import EventHandler
 from vkturbo.longpoll import LongPoll, EventType
 
-vk = VkApi("token")
+vk = VkApi("TOKEN")
 longpoll = LongPoll(vk)
 handler = EventHandler(vk, longpoll)
 
@@ -23,4 +23,5 @@ async def new_lonpoll_version_vkturbo():
 			text = event[5].lower()
 			user_id = event[3]
 
-			await send_message(user_id, "Test message...")
+			if text == "test":
+				await send_message(user_id, "Test message...")
