@@ -1,5 +1,27 @@
 import aiohttp
 import asyncio
+from enum import IntEnum
+
+
+class LongPollMode(IntEnum):
+	#: Получать вложения
+	GET_ATTACHMENTS = 2
+
+	#: Возвращать расширенный набор событий
+	GET_EXTENDED = 2**3
+
+	#: возвращать pts для метода `messages.getLongPollHistory`
+	GET_PTS = 2**5
+
+	#: В событии с кодом 8 (друг стал онлайн) возвращать
+	#: дополнительные данные в поле `extra`
+	GET_EXTRA_ONLINE = 2**6
+
+	#: Возвращать поле `random_id`
+	GET_RANDOM_ID = 2**7
+
+
+DEFAULT_MODE = sum(LongPollMode)
 
 
 class EventType:
@@ -92,9 +114,9 @@ class EventType:
 
 class LongPoll(object):
 
-	def __init__(self, vk, mode=4, wait=25, group_id=None):
+	def __init__(self, vk, mode=DEFAULT_MODE, wait=25, group_id=None):
 		self.vk = vk
-		self.mode = mode
+		self.mode = mode.value if isinstance(mode, LongPollMode) else mode
 		self.wait = wait
 		self.group_id = group_id
 
@@ -124,6 +146,9 @@ class LongPoll(object):
 		self.ts = response["ts"]
 		self.url = f"https://{response['server']}"
 
+		if update_ts:
+			self.ts = response["ts"]
+
 
 	async def get_event_server(self):
 		values = {
@@ -137,12 +162,22 @@ class LongPoll(object):
 		}
 
 		async with aiohttp.ClientSession() as session:
-			response = await session.get(self.url, params=values, timeout=self.wait)
+			response = await session.get(self.url, params=values, timeout=self.wait + 10)
 			response = await response.json()
 		
-		events = [raw_event for raw_event in response["updates"]]
+		if "failed" not in response:
+			self.ts = response["ts"]
+			events = [raw_event for raw_event in response["updates"]]
 
-		return events
+			return events
+		elif response["failed"] == 1:
+			self.ts = response["ts"]
+		elif response["failed"] == 2:
+			self.update_longpoll_server(update_ts=False)
+		elif response["failed"] == 3:
+			self.update_longpoll_server()
+
+		return []
 
 
 	@asyncio.coroutine
