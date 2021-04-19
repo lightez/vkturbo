@@ -19,7 +19,7 @@ class VkTurbo(object):
 			"access_token": self.access_token,
 			"screen_name": screen_name
 		}
-		response = requests.post(f"{VkApi.API_LINK}utils.resolveScreenName", data=data).json()
+		response = requests.post(f"{VkTurbo.API_LINK}utils.resolveScreenName", data=data).json()
 
 		return response["response"]["object_id"]
 
@@ -31,7 +31,7 @@ class VkTurbo(object):
 			values["access_token"] = self.access_token
 				
 		async with aiohttp.ClientSession() as session:
-			response = await session.post(f"{VkApi.API_LINK}{method_name}", data=values)
+			response = await session.post(f"{VkTurbo.API_LINK}{method_name}", data=values)
 			response = await response.json()
 
 		return response if raw else response["response"]
