@@ -49,6 +49,7 @@ async def new_lonpoll_version_vkturbo():
 		if event[0] == EventType.MESSAGE_NEW: # or 4
 			text = event[5].lower()
 			user_id = event[3]
-
-			await send_message(user_id, "Test message...")
+			
+			if text == "test":
+				await send_message(user_id, "Test message...")
 ```
