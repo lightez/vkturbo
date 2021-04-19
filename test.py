@@ -7,10 +7,6 @@ longpoll = LongPoll(vk)
 handler = EventHandler(vk, longpoll)
 
 
-@handler.handler
-async def simple_using_method():
-	await vk.method("status.get", {"user_id": vk.user_id("ansqqq")})
-
 # Simple function for sending a messages
 async def send_message(user_id, message):
 	await vk.method("messages.send", {
