@@ -3,12 +3,12 @@ import asyncio
 import requests
 
 
-class VkApi(object):
+class VkTurbo(object):
 
 	API_LINK = "https://api.vk.com/method/"
 
 
-	def __init__(self, access_token, version=5.65):
+	def __init__(self, access_token, version=5.69):
 		self.access_token = access_token
 		self.version = version
 

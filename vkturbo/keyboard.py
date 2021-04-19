@@ -5,70 +5,72 @@ import json
 
 class Keyboard(object):
 
-	def __init__(self, button, one_time=False, inline=False):
+	def __init__(self, button: list, one_time=False, inline=False):
 		self.one_time = one_time
 		self.inline = inline
 
 		self.keyboard = {
 			"one_time": self.one_time,
 			"inline": self.inline,
-			"buttons": [button]
+			"buttons": button
 		}
 
-	@staticmethod
-	def json_handler(*args, **kwargs):
-		kwargs["ensure_ascii"] = False
-		kwargs["separators"] = (",", ":")
 
-		return json.dumps(*args, **kwargs)
-
-
-	def get_keyboard(self):
-		print(self.keyboard)
-		return self.json_handler(self.keyboard)
-
-
-	@classmethod
-	def get_empty_keyboard(cls):
-		keyboard = cls()
-		keyboard.keyboard["buttons"] = []
-
-		return keyboard.get_keyboard()
+	def add_keyboard(self):
+		return json.dumps(self.keyboard, ensure_ascii=False)
 
 
 class KeyboardButton(object):
 
-	def __init__(self):
-		self.json_text_button =	{
+	def text(self, label, color, payload=None):
+		return {
 			"action": {
 				"type": "text",
-				"label": None,
-				"payload": None
+				"label": label,
+				"payload": payload
 			},
-			"color": None
+			"color": color
 		}
-		self.json_openlink_button = {
+
+
+	def openlink(self, label, link, payload=None):
+		return {
 			"action": {
 				"type": "open_link",
-				"label": None,
-				"link": None,
-				"payload": None
+				"label": label,
+				"link": link,
+				"payload": payload
 			}
 		}
 
 
+	def location(self, payload=None):
+		return {
+			"action": {
+				"type": "location",
+				"payload": payload
+			}
+		}
 
-	def text_button(self, label, color="secondary", payload=None):
-		self.json_text_button["action"]["label"] = label
-		self.json_text_button["action"]["payload"] = payload
-		self.json_text_button["color"] = color
 
-		return self.json_text_button
+	def vkpay(self, pay_hash, payload=None):
+		return {
+			"action": {
+				"type": "vkpay",
+				"hash": pay_hash,
+				"payload": payload
+			}
+		}
 
 
-	def openlink_button(self, label, url, payload=None):
-		self.json_openlink_button["action"]["label"] = label
-		self.json_openlink_button["action"]["link"] = url
-		self.json_openlink_button["action"]["payload"] = payload
-
-		return self.json_openlink_button
+	def vkapps(self, app_id, owner_id, label, app_hash, payload=None):
+		return {
+			"action": {
+				"type": "vkapps",
+				"app_id": app_id,
+				"owner_id": owner_id,
+				"label": label,
+				"hash": app_hash,
+				"payload": payload
+			}
+		}
