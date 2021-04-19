@@ -102,4 +102,4 @@ async def test_keyboard():
 				)
 ```
 
-[visual](https://imgur.com/PMn5Lso)
+[visual](https://i.imgur.com/PMn5Lso.png)
