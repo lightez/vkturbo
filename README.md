@@ -1,5 +1,5 @@
 # vkturbo
-Asynchronous module of vk_api
+Asynchronous module of vk api
 
 [PyPi VkTurbo](https://pypi.org/project/vkturbo/)
 
@@ -10,10 +10,10 @@ Asynchronous module of vk_api
 ## Example:
 
 ```py
-from vkturbo.vkturbo import VkApi
+from vkturbo.vkturbo import VkTurbo
 from vkturbo.handler import EventHandler
 
-vk = VkApi("TOKEN")
+vk = VkTurbo("TOKEN")
 handler = EventHandler(vk)
 
 
@@ -26,11 +26,11 @@ async def get_user_status():
 ## LongPoll work example:
 
 ```py
-from vkturbo.vkturbo import VkApi
+from vkturbo.vkturbo import VkTurbo
 from vkturbo.handler import EventHandler
 from vkturbo.longpoll import LongPoll, EventType
 
-vk = VkApi("token")
+vk = VkTurbo("token")
 longpoll = LongPoll(vk)
 handler = EventHandler(vk, longpoll)
 
