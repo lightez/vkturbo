@@ -1,8 +1,8 @@
 [tool.poetry]
 name = "vkturbo"
-version = "1.0.1"
-description = ""
-authors = ["Your Name <you@example.com>"]
+version = "1.0.2"
+description = "https://github.com/Fsoky/vkturbo"
+authors = ["Fsoky Community <cyberuest0x12@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.7"
