@@ -64,7 +64,7 @@ from vkturbo.keyboard import Keyboard, KeyboardButton
 
 vk = VkTurbo("TOKEN")
 longpoll = LongPoll(vk)
-handler = EventHandler()
+handler = EventHandler(vk, longpoll)
 
 
 @handler.event()
