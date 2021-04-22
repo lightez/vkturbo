@@ -14,7 +14,7 @@ from vkturbo.vkturbo import VkTurbo
 from vkturbo.handler import EventHandler
 
 vk = VkTurbo("TOKEN")
-handler = EventHandler(vk)
+handler = EventHandler(vk, longpoll=None)
 
 
 @handler.handler
