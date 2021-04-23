@@ -19,7 +19,7 @@ handler = EventHandler(vk, longpoll=None)
 
 @handler.handler
 async def get_user_status():
-  status = await vk.method("status.get", {"user_id": vk.user_id("ansqqq")})
+  status = await vk.method("status.get", {"user_id": vk.get_id("ansqqq")})
   print(status)
 ```
 
