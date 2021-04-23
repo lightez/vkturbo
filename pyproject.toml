@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "vkturbo"
-version = "1.0.3"
+version = "1.0.4"
 description = "https://github.com/Fsoky/vkturbo"
 authors = ["Fsoky Community <cyberuest0x12@gmail.com>"]
 

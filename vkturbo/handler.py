@@ -1,6 +1,6 @@
 import asyncio
-from aiovk.longpoll import LongPoll, EventType, Message
-from aiovk.vkturbo import VkTurbo
+from vkturbo.longpoll import LongPoll, EventType
+from vkturbo.vkturbo import VkTurbo
 
 
 class EventHandler:
