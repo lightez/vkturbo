@@ -1,6 +1,12 @@
 import aiohttp
 import asyncio
 from enum import IntEnum
+from datetime import datetime
+from collections import defaultdict
+import six
+from six.moves import range
+
+CHAT_START_ID = int(2E9)
 
 
 class LongPollMode(IntEnum):
@@ -24,7 +30,7 @@ class LongPollMode(IntEnum):
 DEFAULT_MODE = sum(LongPollMode)
 
 
-class EventType:
+class EventType(IntEnum):
 	#: Замена флагов сообщения (FLAGS:=$flags)
 	MESSAGE_FLAGS_REPLACE = 1
 
@@ -112,12 +118,354 @@ class EventType:
 	NOTIFICATION_SETTINGS_UPDATE = 114
 
 
+class VkPlatform(IntEnum):
+	""" Идентификаторы платформ """
+
+	#: Мобильная версия сайта или неопознанное мобильное приложение
+	MOBILE = 1
+
+	#: Официальное приложение для iPhone
+	IPHONE = 2
+
+	#: Официальное приложение для iPad
+	IPAD = 3
+
+	#: Официальное приложение для Android
+	ANDROID = 4
+
+	#: Официальное приложение для Windows Phone
+	WPHONE = 5
+
+	#: Официальное приложение для Windows 8
+	WINDOWS = 6
+
+	#: Полная версия сайта или неопознанное приложение
+	WEB = 7
+
+
+
+class VkOfflineType(IntEnum):
+	""" Выход из сети в событии :attr:`EventType.USER_OFFLINE` """
+
+	#: Пользователь покинул сайт
+	EXIT = 0
+
+	#: Оффлайн по таймауту
+	AWAY = 1
+
+
+class VkMessageFlag(IntEnum):
+	""" Флаги сообщений """
+
+	#: Сообщение не прочитано.
+	UNREAD = 1
+
+	#: Исходящее сообщение.
+	OUTBOX = 2
+
+	#: На сообщение был создан ответ.
+	REPLIED = 2**2
+
+	#: Помеченное сообщение.
+	IMPORTANT = 2**3
+
+	#: Сообщение отправлено через чат.
+	CHAT = 2**4
+
+	#: Сообщение отправлено другом.
+	#: Не применяется для сообщений из групповых бесед.
+	FRIENDS = 2**5
+
+	#: Сообщение помечено как "Спам".
+	SPAM = 2**6
+
+	#: Сообщение удалено (в корзине).
+	DELETED = 2**7
+
+	#: Сообщение проверено пользователем на спам.
+	FIXED = 2**8
+
+	#: Сообщение содержит медиаконтент
+	MEDIA = 2**9
+
+	#: Приветственное сообщение от сообщества.
+	HIDDEN = 2**16
+
+	#: Сообщение удалено для всех получателей.
+	DELETED_ALL = 2**17
+
+
+
+class VkPeerFlag(IntEnum):
+	""" Флаги диалогов """
+
+	#: Важный диалог
+	IMPORTANT = 1
+
+	#: Неотвеченный диалог
+	UNANSWERED = 2
+
+
+class VkChatEventType(IntEnum):
+	""" Идентификатор типа изменения в чате """
+
+	#: Изменилось название беседы
+	TITLE = 1
+
+	#: Сменилась обложка беседы
+	PHOTO = 2
+
+	#: Назначен новый администратор
+	ADMIN_ADDED = 3
+
+	#: Изменены настройки беседы
+	SETTINGS_CHANGED = 4
+
+	#: Закреплено сообщение
+	MESSAGE_PINNED = 5
+
+	#: Пользователь присоединился к беседе
+	USER_JOINED = 6
+
+	#: Пользователь покинул беседу
+	USER_LEFT = 7
+
+	#: Пользователя исключили из беседы
+	USER_KICKED = 8
+
+	#: С пользователя сняты права администратора
+	ADMIN_REMOVED = 9
+
+	#: Бот прислал клавиатуру
+	KEYBOARD_RECEIVED = 11
+
+
+MESSAGE_EXTRA_FIELDS = [
+	'peer_id', 'timestamp', 'text', 'extra_values', 'attachments', 'random_id'
+]
+MSGID = 'message_id'
+
+EVENT_ATTRS_MAPPING = {
+	EventType.MESSAGE_FLAGS_REPLACE: [MSGID, 'flags'] + MESSAGE_EXTRA_FIELDS,
+	EventType.MESSAGE_FLAGS_SET: [MSGID, 'mask'] + MESSAGE_EXTRA_FIELDS,
+	EventType.MESSAGE_FLAGS_RESET: [MSGID, 'mask'] + MESSAGE_EXTRA_FIELDS,
+	EventType.MESSAGE_NEW: [MSGID, 'flags'] + MESSAGE_EXTRA_FIELDS,
+	EventType.MESSAGE_EDIT: [MSGID, 'mask'] + MESSAGE_EXTRA_FIELDS,
+
+	EventType.READ_ALL_INCOMING_MESSAGES: ['peer_id', 'local_id'],
+	EventType.READ_ALL_OUTGOING_MESSAGES: ['peer_id', 'local_id'],
+
+	EventType.USER_ONLINE: ['user_id', 'extra', 'timestamp'],
+	EventType.USER_OFFLINE: ['user_id', 'flags', 'timestamp'],
+
+	EventType.PEER_FLAGS_RESET: ['peer_id', 'mask'],
+	EventType.PEER_FLAGS_REPLACE: ['peer_id', 'flags'],
+	EventType.PEER_FLAGS_SET: ['peer_id', 'mask'],
+
+	EventType.PEER_DELETE_ALL: ['peer_id', 'local_id'],
+	EventType.PEER_RESTORE_ALL: ['peer_id', 'local_id'],
+
+	EventType.CHAT_EDIT: ['chat_id', 'self'],
+	EventType.CHAT_UPDATE: ['type_id', 'peer_id', 'info'],
+
+	EventType.USER_TYPING: ['user_id', 'flags'],
+	EventType.USER_TYPING_IN_CHAT: ['user_id', 'chat_id'],
+	EventType.USER_RECORDING_VOICE: ['peer_id', 'user_id', 'flags', 'timestamp'],
+
+	EventType.USER_CALL: ['user_id', 'call_id'],
+
+	EventType.MESSAGES_COUNTER_UPDATE: ['count'],
+	EventType.NOTIFICATION_SETTINGS_UPDATE: ['values']
+}
+
+
+def get_all_event_attrs():
+	keys = set()
+
+	for l in six.itervalues(EVENT_ATTRS_MAPPING):
+		keys.update(l)
+
+	return tuple(keys)
+
+
+ALL_EVENT_ATTRS = get_all_event_attrs()
+
+PARSE_PEER_ID_EVENTS = [
+	k for k, v in six.iteritems(EVENT_ATTRS_MAPPING) if 'peer_id' in v
+]
+PARSE_MESSAGE_FLAGS_EVENTS = [
+	EventType.MESSAGE_FLAGS_REPLACE,
+	EventType.MESSAGE_NEW
+]
+
+
+class Event(object):
+	""" Событие, полученное от longpoll-сервера.
+
+	Имеет поля в соответствии с `документацией
+	<https://vk.com/dev/using_longpoll_2?f=3.%2BСтруктура%2Bсобытий>`_.
+
+	События `MESSAGE_NEW` и `MESSAGE_EDIT` имеют (среди прочих) такие поля:
+		- `text` - `экранированный <https://ru.wikipedia.org/wiki/Мнемоники_в_HTML>`_ текст
+		- `message` - оригинальный текст сообщения.
+
+	События с полем `timestamp` также дополнительно имеют поле `datetime`.
+	"""
+
+	def __init__(self, raw):
+		self.raw = raw
+
+		self.from_user = False
+		self.from_chat = False
+		self.from_group = False
+		self.from_me = False
+		self.to_me = False
+
+		self.attachments = {}
+		self.message_data = None
+
+		self.message_id = None
+		self.timestamp = None
+		self.peer_id = None
+		self.flags = None
+		self.extra = None
+		self.extra_values = None
+		self.type_id = None
+
+		try:
+			self.type = EventType(self.raw[0])
+			self._list_to_attr(self.raw[1:], EVENT_ATTRS_MAPPING[self.type])
+		except ValueError:
+			self.type = self.raw[0]
+
+		if self.extra_values:
+			self._dict_to_attr(self.extra_values)
+
+		if self.type in PARSE_PEER_ID_EVENTS:
+			self._parse_peer_id()
+
+		if self.type in PARSE_MESSAGE_FLAGS_EVENTS:
+			self._parse_message_flags()
+
+		if self.type is EventType.CHAT_UPDATE:
+			self._parse_chat_info()
+			try:
+				self.update_type = VkChatEventType(self.type_id)
+			except ValueError:
+				self.update_type = self.type_id
+
+		elif self.type is EventType.NOTIFICATION_SETTINGS_UPDATE:
+			self._dict_to_attr(self.values)
+			self._parse_peer_id()
+
+		elif self.type is EventType.PEER_FLAGS_REPLACE:
+			self._parse_peer_flags()
+
+		elif self.type in [EventType.MESSAGE_NEW, EventType.MESSAGE_EDIT]:
+			self._parse_message()
+
+		elif self.type in [EventType.USER_ONLINE, EventType.USER_OFFLINE]:
+			self.user_id = abs(self.user_id)
+			self._parse_online_status()
+
+		elif self.type is EventType.USER_RECORDING_VOICE:
+			if isinstance(self.user_id, list):
+				self.user_id = self.user_id[0]
+
+		if self.timestamp:
+			self.datetime = datetime.utcfromtimestamp(self.timestamp)
+
+	def _list_to_attr(self, raw, attrs):
+		for i in range(min(len(raw), len(attrs))):
+			self.__setattr__(attrs[i], raw[i])
+
+	def _dict_to_attr(self, values):
+		for k, v in six.iteritems(values):
+			self.__setattr__(k, v)
+
+	def _parse_peer_id(self):
+		if self.peer_id < 0:  # Сообщение от/для группы
+			self.from_group = True
+			self.group_id = abs(self.peer_id)
+
+		elif self.peer_id > CHAT_START_ID:  # Сообщение из беседы
+			self.from_chat = True
+			self.chat_id = self.peer_id - CHAT_START_ID
+
+			if self.extra_values and 'from' in self.extra_values:
+				self.user_id = int(self.extra_values['from'])
+
+		else:  # Сообщение от/для пользователя
+			self.from_user = True
+			self.user_id = self.peer_id
+
+	def _parse_message_flags(self):
+		self.message_flags = set(
+			x for x in VkMessageFlag if self.flags & x
+		)
+
+	def _parse_peer_flags(self):
+		self.peer_flags = set(
+			x for x in VkPeerFlag if self.flags & x
+		)
+
+	def _parse_message(self):
+		if self.type is EventType.MESSAGE_NEW:
+			if self.flags & VkMessageFlag.OUTBOX:
+				self.from_me = True
+			else:
+				self.to_me = True
+
+		# ВК возвращает сообщения в html-escaped виде,
+		# при этом переводы строк закодированы как <br> и не экранированы
+
+		self.text = self.text.replace('<br>', '\n')
+		self.message = self.text \
+			.replace('&lt;', '<') \
+			.replace('&gt;', '>') \
+			.replace('&quot;', '"') \
+			.replace('&amp;', '&')
+
+	def _parse_online_status(self):
+		try:
+			if self.type is EventType.USER_ONLINE:
+				self.platform = VkPlatform(self.extra & 0xFF)
+
+			elif self.type is EventType.USER_OFFLINE:
+				self.offline_type = VkOfflineType(self.flags)
+
+		except ValueError:
+			pass
+
+	def _parse_chat_info(self):
+		if self.type_id == VkChatEventType.ADMIN_ADDED.value:
+			self.info = {'admin_id': self.info}
+
+		elif self.type_id == VkChatEventType.MESSAGE_PINNED.value:
+			self.info = {'conversation_message_id': self.info}
+
+		elif self.type_id in [VkChatEventType.USER_JOINED.value,
+							  VkChatEventType.USER_LEFT.value,
+							  VkChatEventType.USER_KICKED.value,
+							  VkChatEventType.ADMIN_REMOVED.value]:
+			self.info = {'user_id': self.info}
+
+
 class LongPoll(object):
 
-	def __init__(self, vk, mode=DEFAULT_MODE, wait=25, group_id=None):
+	DEFAULT_EVENT_CLASS = Event
+
+	#: События, для которых можно загрузить данные сообщений из API
+	PRELOAD_MESSAGE_EVENTS = [
+		EventType.MESSAGE_NEW,
+		EventType.MESSAGE_EDIT
+	]
+
+	def __init__(self, vk, mode=DEFAULT_MODE, preload_messages=False, wait=25, group_id=None):
 		self.vk = vk
 		self.mode = mode.value if isinstance(mode, LongPollMode) else mode
 		self.wait = wait
+		self.preload_messages = preload_messages
 		self.group_id = group_id
 
 		self.key = None
@@ -130,9 +478,13 @@ class LongPoll(object):
 		loop.run_until_complete(self.update_longpoll_server())
 
 
+	def _parse_event(self, raw_event):
+		return self.DEFAULT_EVENT_CLASS(raw_event)
+
+
 	async def update_longpoll_server(self, update_ts=True):
 		values = {
-			"lp_version": "3",
+			"lp_version": 3,
 			"need_pts": self.pts
 		}
 
@@ -167,7 +519,14 @@ class LongPoll(object):
 		
 		if "failed" not in response:
 			self.ts = response["ts"]
-			events = [raw_event for raw_event in response["updates"]]
+
+			if self.pts:
+				self.pts = response["pts"]
+
+			events = [self._parse_event(raw_event) for raw_event in response["updates"]]
+
+			if self.preload_messages:
+				self.preload_message_events_data(events)
 
 			return events
 		elif response["failed"] == 1:
@@ -178,6 +537,32 @@ class LongPoll(object):
 			self.update_longpoll_server()
 
 		return []
+
+
+	def preload_message_events_data(self, events):
+		""" Предзагрузка данных сообщений из API
+
+		:type events: list of Event
+		"""
+		message_ids = set()
+		event_by_message_id = defaultdict(list)
+
+		for event in events:
+			if event.type in self.PRELOAD_MESSAGE_EVENTS:
+				message_ids.add(event.message_id)
+				event_by_message_id[event.message_id].append(event)
+
+		if not message_ids:
+			return
+
+		messages_data = self.vk.method(
+			'messages.getById',
+			{'message_ids': message_ids}
+		)
+
+		for message in messages_data['items']:
+			for event in event_by_message_id[message['id']]:
+				event.message_data = message
 
 
 	@asyncio.coroutine

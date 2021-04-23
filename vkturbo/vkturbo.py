@@ -8,14 +8,14 @@ class VkTurbo(object):
 	API_LINK = "https://api.vk.com/method/"
 
 
-	def __init__(self, access_token, version=5.69):
+	def __init__(self, access_token, version=5.85):
 		self.access_token = access_token
 		self.version = version
 
 
-	def user_id(self, screen_name: str):
+	def get_id(self, screen_name: str):
 		data = {
-			"v": self.version,
+			"v": 5.21,
 			"access_token": self.access_token,
 			"screen_name": screen_name
 		}
