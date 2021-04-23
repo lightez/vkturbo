@@ -46,9 +46,9 @@ async def send_message(user_id, message):
 @handler.event()
 async def new_lonpoll_version_vkturbo():
 	async for event in await longpoll.listen():
-		if event[0] == EventType.MESSAGE_NEW: # or 4
-			text = event[5].lower()
-			user_id = event[3]
+		if event.type == EventType.MESSAGE_NEW: # or 4
+			text = event.text.lower()
+			user_id = event.user_id
 			
 			if text == "test":
 				await send_message(user_id, "Test message...")
@@ -70,9 +70,9 @@ handler = EventHandler(vk, longpoll)
 @handler.event()
 async def test_keyboard():
 	async for event in await longpoll.listen():
-		if event[0] == 4:
-			user_id = event[3]
-			text = event[5].lower()
+		if event.type == EventType.MESSAGE_NEW:
+			user_id = event.user_id
+			text = event.text.lower()
 
 			if text == "test":
 				keyboard = Keyboard(
