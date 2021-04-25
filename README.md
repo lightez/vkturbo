@@ -5,7 +5,7 @@ Asynchronous module of vk api
 
 [Official documentation of Vk API](https://vk.com/dev/manuals)
 
-`pip install -U vkturbo`
+	pip install -U vkturbo
 
 ## Example:
 
