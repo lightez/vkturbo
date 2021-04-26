@@ -134,11 +134,7 @@ async def test_carousel():
 								photo_id="-203980592_457239030",
 								link="https://vk.com/fsoky",
 								buttons=[KeyboardButton().text("button 1", "negative"), KeyboardButton("button 2", "primary")]
-							)
-						]
-					),
-					CarouselButton().openlink(
-						[
+							),
 							CarouselButton().element(
 								title="Test title 2",
 								description="Test Description 2",
