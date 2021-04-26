@@ -104,6 +104,8 @@ async def test_keyboard():
 
 ![visual](https://i.imgur.com/PMn5Lso.png)
 
+## How to work with carousel?
+
 ```py
 from vkturbo.vkturbo import VkTurbo
 from vkturbo.handler import EventHandler
@@ -147,4 +149,13 @@ async def test_carousel():
 						]
 					)
 				]
+			)
+			
+			await vk.method("messages.send",
+				{
+					"user_id": user_id,
+					"message": "some text...",
+					"random_id": 0,
+					"template": carousel.add_carousel()
+				}
 			)
