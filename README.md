@@ -103,3 +103,48 @@ async def test_keyboard():
 ```
 
 ![visual](https://i.imgur.com/PMn5Lso.png)
+
+```py
+from vkturbo.vkturbo import VkTurbo
+from vkturbo.handler import EventHandler
+from vkturbo.longpoll import LongPoll, EventType
+from vkturbo.keyboard import Keyboard, KeyboardButton, Carousel, CarouselButton
+
+vk = VkTurbo("TOKEN")
+longpoll = LongPoll(vk)
+handler = EventHandler(vk, longpoll)
+
+
+@handler.event()
+async def test_carousel():
+	async for event in await longpoll.listen():
+		if event.type == EventType.MESSAGE_NEW and event.to_me:
+			user_id = event.user_id
+			text = event.text.lower()
+			
+			carousel = Carousel(
+				[
+					CarouselButton().openlink(
+						[
+							CarouselButton().element(
+								title="Test title 1",
+								description="Test Description 1",
+								photo_id="-203980592_457239030",
+								link="https://vk.com/fsoky",
+								buttons=[KeyboardButton().text("button 1", "negative"), KeyboardButton("button 2", "primary")]
+							)
+						]
+					),
+					CarouselButton().openlink(
+						[
+							CarouselButton().element(
+								title="Test title 2",
+								description="Test Description 2",
+								photo_id="-203980592_457239029",
+								link="https://vk.com/fsoky",
+								buttons=[KeyboardButton().text("button 1", "negative"), KeyboardButton("button 2", "primary")]
+							)
+						]
+					)
+				]
+			)
