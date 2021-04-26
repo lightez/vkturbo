@@ -133,14 +133,14 @@ async def test_carousel():
 								description="Test Description 1",
 								photo_id="-203980592_457239030",
 								link="https://vk.com/fsoky",
-								buttons=[KeyboardButton().text("button 1", "negative"), KeyboardButton("button 2", "primary")]
+								buttons=[KeyboardButton().text("button 1", "negative"), KeyboardButton().text("button 2", "primary")]
 							),
 							CarouselButton().element(
 								title="Test title 2",
 								description="Test Description 2",
 								photo_id="-203980592_457239029",
 								link="https://vk.com/fsoky",
-								buttons=[KeyboardButton().text("button 1", "negative"), KeyboardButton("button 2", "primary")]
+								buttons=[KeyboardButton().text("button 1", "negative"), KeyboardButton().text("button 2", "primary")]
 							)
 						]
 					)
@@ -155,3 +155,6 @@ async def test_carousel():
 					"template": carousel.add_carousel()
 				}
 			)
+```
+
+![visual](https://i.imgur.com/v4C7hwe.png)
