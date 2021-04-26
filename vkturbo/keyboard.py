@@ -17,12 +17,13 @@ class Keyboard(object):
 
 
 	def add_keyboard(self):
-		return json.dumps(self.keyboard, ensure_ascii=False)
+		obj = json.dumps(self.keyboard, ensure_ascii=False).encode("utf-8")
+		return obj.decode("utf-8")
 
 
 class KeyboardButton(object):
 
-	def text(self, label, color, payload=None):
+	def text(self, label, color="secondary", payload=None):
 		return {
 			"action": {
 				"type": "text",
@@ -74,3 +75,61 @@ class KeyboardButton(object):
 				"payload": payload
 			}
 		}
+
+
+class Carousel(object):
+
+	def __init__(self, carousel: list):
+		self.carousel = carousel
+
+
+	def add_carousel(self):
+		obj = json.dumps(self.carousel[0], ensure_ascii=False).encode("utf-8")
+		return obj.decode("utf-8")
+
+
+class CarouselButton(object):
+
+	@staticmethod
+	def element(buttons: list, link, title=None, description=None, photo_id=None):
+		return {
+			"title": title,
+			"description": description,
+			"action": {
+				"type": "open_link",
+				"link": link
+			},
+			"photo_id": photo_id,
+			"buttons": buttons
+		}
+
+
+	@staticmethod
+	def element_photo(buttons: list, photo_id=None, title=None, description=None):
+		return {
+			"title": title,
+			"description": description,
+			"photo_id": photo_id,
+			"action": {
+				"type": "open_photo"
+			},
+			"buttons": buttons
+		}
+
+
+	def openlink(self, elems: list):
+		values = {
+			"type": "carousel"
+		}
+		values["elements"] = elems
+
+		return values
+
+
+	def openphoto(self, elems: list):
+		values = {
+			"type": "carousel"
+		}
+		values["elements"] = elems
+
+		return values
