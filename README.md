@@ -182,3 +182,21 @@ async def test_new_longpoll_version(message: Message):
 
 		await message.send("Keyboard?:3", keyboard=keyboard.add_keyboard())
 ```
+
+## New decorator `on_message`
+
+```py
+from vkturbo.vkturbo import VkTurbo
+from vkturbo.handler import EventHandler, Message
+from vkturbo.longpoll import LongPoll, EventType
+
+vk = VkTurbo("TOKEN")
+longpoll = LongPoll(vk)
+handler = EventHandler(vk, longpoll)
+
+
+# The bot will be answering on message, which you passed to parameters
+@handler.on_message(["hello", "hi"]) # or str
+async def test_on_message(message: Message):
+	await message.send("Hello!")
+```
