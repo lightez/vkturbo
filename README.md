@@ -178,7 +178,7 @@ async def test_new_longpoll_version(message: Message):
 	if message.text.lower() == "test":
 		await message.send("Hello, Everyone!")
 	elif message.text.lower() == "test 2":
-		keyboard = Keyboard([[KeyboardButton().link("YouTube", "https://youtube.com/c/Фсоки")]])
+		keyboard = Keyboard([[KeyboardButton().openlink("YouTube", "https://youtube.com/c/Фсоки")]])
 
 		await message.send("Keyboard?:3", keyboard=keyboard.add_keyboard())
 ```
