@@ -24,26 +24,28 @@ class EventHandler:
 
 		return decorator
 
+
+	def _set_attributes(self, event):
+		attrs = ["user_id", "type", "from_user", "to_me", "message_id",
+					"attachments", "message_data", "text", "from_chat",
+					"from_group", "timestamp", "peer_id", "flags", "extra",
+					"extra_values", "type_id", "vk_session"]
+		attr_values = [event.user_id, event.type, event.from_user, event.to_me, event.message_id,
+						event.attachments, event.message_data, event.text, event.from_chat,
+						event.from_group, event.timestamp, event.peer_id, event.flags, event.extra,
+						event.extra_values, event.type_id, self.vk]
+
+		for attr, attr_value in zip(attrs, attr_values):
+			setattr(Message, attr, attr_value)
 	
 	# test....
 	def longpoll_handler(self, event_type=EventType.MESSAGE_NEW):
 		def decorator(function):
 			
 			async def under_handler():
-				setattr(Message, "vk_session", self.vk)
 				async for event in await self.longpoll.listen():
 					if event.type == event_type and event.to_me:
-						attrs = ["user_id", "type", "from_user", "to_me", "message_id",
-									"attachments", "message_data", "text", "from_chat",
-									"from_group", "timestamp", "peer_id", "flags", "extra",
-									"extra_values", "type_id"]
-						attr_values = [event.user_id, event.type, event.from_user, event.to_me, event.message_id,
-										event.attachments, event.message_data, event.text, event.from_chat,
-										event.from_group, event.timestamp, event.peer_id, event.flags, event.extra,
-										event.extra_values, event.type_id]
-
-						for attr, attr_value in zip(attrs, attr_values):
-							setattr(Message, attr, attr_value)
+						self._set_attributes(event)
 
 						try:
 							self.tasks_handler(function(Message))
@@ -53,7 +55,34 @@ class EventHandler:
 			return self.tasks_handler(under_handler())
 
 		return decorator
-		
+	
+
+	def on_message(self, message_content):
+		def decorator(function):
+
+			async def under_handler():
+				async for event in await self.longpoll.listen():
+					if event.type == EventType.MESSAGE_NEW and event.to_me:
+						self._set_attributes(event)
+
+						if isinstance(message_content, list):
+							if event.text in message_content:
+								try:
+									self.tasks_handler(function(Message))
+								except RuntimeError:
+									continue
+						elif isinstance(message_content, str):
+							if event.text == message_content:
+								try:
+									self.tasks_handler(function(Message))
+								except RuntimeError:
+									continue
+
+
+			return self.tasks_handler(under_handler())
+
+		return decorator
+
 
 	@staticmethod
 	def tasks_handler(callback):
