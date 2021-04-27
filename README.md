@@ -158,3 +158,27 @@ async def test_carousel():
 ```
 
 ![visual](https://i.imgur.com/v4C7hwe.png)
+
+## A new variant to use LongPoll
+
+```py
+from vkturbo.vkturbo import VkTurbo
+from vkturbo.handler import EventHandler, Message
+from vkturbo.longpoll import LongPoll, EventType
+from vkturbo.keyboard import Keyboard, KeyboardButton, Carousel, CarouselButton
+
+vk = VkTurbo("TOKEN")
+longpoll = LongPoll(vk)
+handler = EventHandler(vk, longpoll)
+
+
+# New LongPoll version... beta
+@handler.longpoll_handler()
+async def test_new_longpoll_version(message: Message):
+	if message.text.lower() == "test":
+		await message.send("Hello, Everyone!")
+	elif message.text.lower() == "test 2":
+		keyboard = Keyboard([[KeyboardButton().link("YouTube", "https://youtube.com/c/Фсоки")]])
+
+		await message.send("Keyboard?:3", keyboard=keyboard.add_keyboard())
+```
